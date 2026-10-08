@@ -45,6 +45,7 @@ public class code extends JFrame {
 
         // Build Screens
         mainPanel.add(createLoginPanel(), "Login");
+        mainPanel.add(createRegisterPanel(), "Register"); // Added Registration Screen
         mainPanel.add(createMenuPanel(), "Menu");
         mainPanel.add(createQuizPanel(), "Quiz");
         mainPanel.add(createResultPanel(), "Result");
@@ -93,7 +94,7 @@ public class code extends JFrame {
         card.add(passwordField);
 
         ModernButton loginBtn = new ModernButton("Login", primaryColor, Color.WHITE);
-        loginBtn.setBounds(50, 260, 300, 40);
+        loginBtn.setBounds(50, 260, 145, 40); // Adjusted size to fit register button
         loginBtn.addActionListener(e -> {
             if (usernameField.getText().trim().equals(registeredUsername) &&
                 new String(passwordField.getPassword()).equals(registeredPassword)) {
@@ -106,10 +107,91 @@ public class code extends JFrame {
         });
         card.add(loginBtn);
 
+        ModernButton registerBtn = new ModernButton("Register", new Color(108, 117, 125), Color.WHITE);
+        registerBtn.setBounds(205, 260, 145, 40); // Placed next to login button
+        registerBtn.addActionListener(e -> {
+            cardLayout.show(mainPanel, "Register");
+            usernameField.setText("");
+            passwordField.setText("");
+        });
+        card.add(registerBtn);
+
         ModernButton closeBtn = new ModernButton("Exit Application", new Color(220, 53, 69), Color.WHITE);
         closeBtn.setBounds(50, 310, 300, 40);
         closeBtn.addActionListener(e -> System.exit(0));
         card.add(closeBtn);
+
+        panel.add(card);
+        return panel;
+    }
+
+    // New Registration Panel
+    private JPanel createRegisterPanel() {
+        JPanel panel = new JPanel(null);
+        panel.setBackground(bgColor);
+
+        JPanel card = new JPanel(null);
+        card.setBackground(cardColor);
+        card.setBounds(150, 40, 400, 380);
+        card.setBorder(BorderFactory.createLineBorder(new Color(230, 230, 230), 1));
+
+        JLabel title = new JLabel("Create Account", SwingConstants.CENTER);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        title.setForeground(textColor);
+        title.setBounds(0, 30, 400, 40);
+        card.add(title);
+
+        JLabel userLabel = new JLabel("New Username");
+        userLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        userLabel.setBounds(50, 100, 300, 20);
+        card.add(userLabel);
+
+        JTextField regUsernameField = new JTextField();
+        regUsernameField.setBounds(50, 125, 300, 35);
+        regUsernameField.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Color.LIGHT_GRAY),
+                new EmptyBorder(5, 10, 5, 10)));
+        card.add(regUsernameField);
+
+        JLabel passLabel = new JLabel("New Password");
+        passLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        passLabel.setBounds(50, 175, 300, 20);
+        card.add(passLabel);
+
+        JPasswordField regPasswordField = new JPasswordField();
+        regPasswordField.setBounds(50, 200, 300, 35);
+        regPasswordField.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Color.LIGHT_GRAY),
+                new EmptyBorder(5, 10, 5, 10)));
+        card.add(regPasswordField);
+
+        ModernButton submitBtn = new ModernButton("Sign Up", primaryColor, Color.WHITE);
+        submitBtn.setBounds(50, 260, 300, 40);
+        submitBtn.addActionListener(e -> {
+            String newUsername = regUsernameField.getText().trim();
+            String newPassword = new String(regPasswordField.getPassword());
+
+            if (newUsername.isEmpty() || newPassword.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Username and password cannot be empty.", "Error", JOptionPane.WARNING_MESSAGE);
+            } else {
+                registeredUsername = newUsername;
+                registeredPassword = newPassword;
+                JOptionPane.showMessageDialog(this, "Registration Successful! You can now log in.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                regUsernameField.setText("");
+                regPasswordField.setText("");
+                cardLayout.show(mainPanel, "Login");
+            }
+        });
+        card.add(submitBtn);
+
+        ModernButton backBtn = new ModernButton("Back to Login", new Color(108, 117, 125), Color.WHITE);
+        backBtn.setBounds(50, 310, 300, 40);
+        backBtn.addActionListener(e -> {
+            regUsernameField.setText("");
+            regPasswordField.setText("");
+            cardLayout.show(mainPanel, "Login");
+        });
+        card.add(backBtn);
 
         panel.add(card);
         return panel;
@@ -247,7 +329,7 @@ public class code extends JFrame {
     }
 
     private void showResults() {
-        JPanel resultPanel = (JPanel) mainPanel.getComponent(3);
+        JPanel resultPanel = (JPanel) mainPanel.getComponent(4); // Index changed due to Register panel insertion
         JLabel scoreLabel = (JLabel) resultPanel.getClientProperty("scoreLabel");
         scoreLabel.setText(score + " / " + currentQuestions.length);
         cardLayout.show(mainPanel, "Result");
