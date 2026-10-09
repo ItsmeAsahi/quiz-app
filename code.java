@@ -22,7 +22,10 @@ public class code extends JFrame {
     private int currentQuestionIndex = 0;
     private int score = 0;
 
-    // UI Elements for Quiz
+    // UI Elements for Dynamic Updates
+    private JLabel dashboardWelcomeLabel;
+    private JLabel dashboardQuizzesLabel;
+    private JLabel dashboardAccuracyLabel;
     private JLabel questionLabel;
     private ModernButton[] optionButtons;
     private JLabel progressLabel;
@@ -40,7 +43,6 @@ public class code extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
 
-        // Ensure database files exist
         DatabaseHelper.initializeDatabase();
 
         cardLayout = new CardLayout();
@@ -50,6 +52,7 @@ public class code extends JFrame {
         // Build Screens
         mainPanel.add(createLoginPanel(), "Login");
         mainPanel.add(createRegisterPanel(), "Register");
+        mainPanel.add(createDashboardPanel(), "Dashboard");
         mainPanel.add(createMenuPanel(), "Menu");
         mainPanel.add(createQuizPanel(), "Quiz");
         mainPanel.add(createResultPanel(), "Result");
@@ -97,7 +100,7 @@ public class code extends JFrame {
             
             if (DatabaseHelper.authenticateUser(user, pass)) {
                 loggedInUser = user;
-                cardLayout.show(mainPanel, "Menu");
+                loadDashboard();
                 usernameField.setText("");
                 passwordField.setText("");
             } else {
@@ -180,6 +183,66 @@ public class code extends JFrame {
         return panel;
     }
 
+    private JPanel createDashboardPanel() {
+        JPanel panel = new JPanel(null);
+        panel.setBackground(bgColor);
+
+        dashboardWelcomeLabel = new JLabel("Welcome, User!", SwingConstants.CENTER);
+        dashboardWelcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        dashboardWelcomeLabel.setForeground(textColor);
+        dashboardWelcomeLabel.setBounds(0, 40, 700, 40);
+        panel.add(dashboardWelcomeLabel);
+
+        // Statistics Card
+        JPanel statsCard = new JPanel(new GridLayout(2, 1, 10, 10));
+        statsCard.setBackground(cardColor);
+        statsCard.setBounds(200, 110, 300, 120);
+        statsCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(230, 230, 230), 1),
+                new EmptyBorder(20, 20, 20, 20)));
+
+        dashboardQuizzesLabel = new JLabel("Total Quizzes Taken: 0", SwingConstants.CENTER);
+        dashboardQuizzesLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        statsCard.add(dashboardQuizzesLabel);
+
+        dashboardAccuracyLabel = new JLabel("Overall Accuracy: 0%", SwingConstants.CENTER);
+        dashboardAccuracyLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        statsCard.add(dashboardAccuracyLabel);
+        
+        panel.add(statsCard);
+
+        ModernButton takeQuizBtn = new ModernButton("Take a Quiz", primaryColor, Color.WHITE);
+        takeQuizBtn.setBounds(200, 270, 300, 50);
+        takeQuizBtn.addActionListener(e -> cardLayout.show(mainPanel, "Menu"));
+        panel.add(takeQuizBtn);
+
+        ModernButton logoutBtn = new ModernButton("Logout", new Color(220, 53, 69), Color.WHITE);
+        logoutBtn.setBounds(250, 340, 200, 40);
+        logoutBtn.addActionListener(e -> {
+            loggedInUser = "";
+            cardLayout.show(mainPanel, "Login");
+        });
+        panel.add(logoutBtn);
+
+        return panel;
+    }
+
+    private void loadDashboard() {
+        dashboardWelcomeLabel.setText("Welcome, " + loggedInUser + "!");
+        
+        int[] stats = DatabaseHelper.getUserStats(loggedInUser);
+        int quizzesTaken = stats[0];
+        int totalCorrect = stats[1];
+        int totalQuestions = stats[2];
+
+        dashboardQuizzesLabel.setText("Total Quizzes Taken: " + quizzesTaken);
+        
+        int accuracy = totalQuestions == 0 ? 0 : (int) Math.round((totalCorrect * 100.0) / totalQuestions);
+        dashboardAccuracyLabel.setText("Overall Accuracy: " + accuracy + "%");
+        
+        cardLayout.show(mainPanel, "Dashboard");
+    }
+
     private JPanel createMenuPanel() {
         JPanel panel = new JPanel(null);
         panel.setBackground(bgColor);
@@ -201,17 +264,14 @@ public class code extends JFrame {
         cppBtn.setBounds(200, 280, 300, 50);
         cppBtn.addActionListener(e -> loadQuiz("C++", getCppQuestions()));
 
-        ModernButton logoutBtn = new ModernButton("Logout", Color.GRAY, Color.WHITE);
-        logoutBtn.setBounds(250, 370, 200, 40);
-        logoutBtn.addActionListener(e -> {
-            loggedInUser = "";
-            cardLayout.show(mainPanel, "Login");
-        });
+        ModernButton backBtn = new ModernButton("Back to Dashboard", Color.GRAY, Color.WHITE);
+        backBtn.setBounds(250, 370, 200, 40);
+        backBtn.addActionListener(e -> loadDashboard());
 
         panel.add(javaBtn);
         panel.add(pythonBtn);
         panel.add(cppBtn);
-        panel.add(logoutBtn);
+        panel.add(backBtn);
 
         return panel;
     }
@@ -242,6 +302,11 @@ public class code extends JFrame {
             panel.add(optionButtons[i]);
             yOffset += 60;
         }
+        
+        ModernButton quitBtn = new ModernButton("Quit Quiz", new Color(220, 53, 69), Color.WHITE);
+        quitBtn.setBounds(275, 430, 150, 35);
+        quitBtn.addActionListener(e -> loadDashboard());
+        panel.add(quitBtn);
 
         return panel;
     }
@@ -262,21 +327,19 @@ public class code extends JFrame {
         scoreDisplay.setBounds(0, 100, 700, 60);
         panel.add(scoreDisplay);
 
-        // Placeholder for the Pie Chart - Will be updated dynamically
         JPanel chartContainer = new JPanel(new BorderLayout());
         chartContainer.setBounds(250, 170, 200, 200);
         chartContainer.setOpaque(false);
         panel.add(chartContainer);
 
-        // Legend
         JLabel legend = new JLabel("<html><font color='#2ECC71'>■ Correct</font> &nbsp; <font color='#E74C3C'>■ Incorrect</font></html>", SwingConstants.CENTER);
         legend.setBounds(0, 380, 700, 30);
         panel.add(legend);
 
-        ModernButton menuBtn = new ModernButton("Back to Menu", primaryColor, Color.WHITE);
-        menuBtn.setBounds(250, 430, 200, 50);
-        menuBtn.addActionListener(e -> cardLayout.show(mainPanel, "Menu"));
-        panel.add(menuBtn);
+        ModernButton dashBtn = new ModernButton("Return to Dashboard", primaryColor, Color.WHITE);
+        dashBtn.setBounds(225, 430, 250, 50);
+        dashBtn.addActionListener(e -> loadDashboard());
+        panel.add(dashBtn);
 
         panel.putClientProperty("scoreLabel", scoreDisplay);
         panel.putClientProperty("chartContainer", chartContainer);
@@ -286,10 +349,7 @@ public class code extends JFrame {
     private void loadQuiz(String subject, List<QuizQuestion> questions) {
         currentSubject = subject;
         activeQuestions = questions;
-        
-        // Randomize the questions
         Collections.shuffle(activeQuestions);
-        
         currentQuestionIndex = 0;
         score = 0;
 
@@ -320,10 +380,9 @@ public class code extends JFrame {
     }
 
     private void showResults() {
-        // Save performance to database
         DatabaseHelper.saveScore(loggedInUser, currentSubject, score, activeQuestions.size());
 
-        JPanel resultPanel = (JPanel) mainPanel.getComponent(4);
+        JPanel resultPanel = (JPanel) mainPanel.getComponent(5); // Result panel is index 5
         
         JLabel scoreLabel = (JLabel) resultPanel.getClientProperty("scoreLabel");
         scoreLabel.setText("You Scored: " + score + " / " + activeQuestions.size());
@@ -415,7 +474,6 @@ public class code extends JFrame {
         }
     }
 
-    // Custom Component for Drawing the Pie Chart
     class PerformanceChart extends JPanel {
         private int correct, wrong;
 
@@ -437,17 +495,15 @@ public class code extends JFrame {
             int correctAngle = (int) Math.round(((double) correct / total) * 360);
             int wrongAngle = 360 - correctAngle;
 
-            // Draw Green Arc (Correct)
             g2.setColor(new Color(46, 204, 113));
-            g2.fillArc(10, 10, 180, 180, 90, -correctAngle); // Draw clockwise from top
+            g2.fillArc(10, 10, 180, 180, 90, -correctAngle);
 
-            // Draw Red Arc (Incorrect)
             g2.setColor(new Color(231, 76, 60));
             g2.fillArc(10, 10, 180, 180, 90 - correctAngle, -wrongAngle);
         }
     }
 
-    // --- Simple Flat-File Database Logic ---
+    // --- Local Database Logic ---
     static class DatabaseHelper {
         private static final String USERS_FILE = "users.csv";
         private static final String SCORES_FILE = "scores.csv";
@@ -465,7 +521,7 @@ public class code extends JFrame {
             try (BufferedReader reader = new BufferedReader(new FileReader(USERS_FILE))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    if (line.split(",")[0].equals(username)) return false; // User exists
+                    if (line.split(",")[0].equals(username)) return false; 
                 }
             } catch (IOException ignored) {}
 
@@ -482,7 +538,7 @@ public class code extends JFrame {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     String[] parts = line.split(",");
-                    if (parts[0].equals(username) && parts[1].equals(password)) return true;
+                    if (parts.length >= 2 && parts[0].equals(username) && parts[1].equals(password)) return true;
                 }
             } catch (IOException e) {}
             return false;
@@ -494,6 +550,27 @@ public class code extends JFrame {
                  PrintWriter out = new PrintWriter(bw)) {
                 out.println(username + "," + subject + "," + score + "," + total);
             } catch (IOException ignored) {}
+        }
+
+        // Returns {totalQuizzesTaken, totalCorrectAnswers, totalQuestionsAttempted}
+        public static int[] getUserStats(String username) {
+            int quizzesTaken = 0;
+            int totalScore = 0;
+            int totalQuestions = 0;
+
+            try (BufferedReader reader = new BufferedReader(new FileReader(SCORES_FILE))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] parts = line.split(",");
+                    if (parts.length == 4 && parts[0].equals(username)) {
+                        quizzesTaken++;
+                        totalScore += Integer.parseInt(parts[2]);
+                        totalQuestions += Integer.parseInt(parts[3]);
+                    }
+                }
+            } catch (IOException | NumberFormatException ignored) {}
+
+            return new int[]{quizzesTaken, totalScore, totalQuestions};
         }
     }
 
